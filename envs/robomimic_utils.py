@@ -7,12 +7,12 @@ from gymnasium.spaces import Box
 import imageio
 import h5py
 
-import robomimic.utils.env_utils as EnvUtils
-import robomimic.utils.file_utils as FileUtils
-import robomimic.utils.env_utils as EnvUtils
-import robomimic.utils.obs_utils as ObsUtils
-
 from utils.datasets import Dataset
+
+
+EnvUtils = None
+FileUtils = None
+ObsUtils = None
 
 
 def is_robomimic_env(env_name):
@@ -27,7 +27,22 @@ low_dim_keys = {"low_dim": ('robot0_eef_pos',
     'robot0_eef_quat',
     'robot0_gripper_qpos',
     'object')}
-ObsUtils.initialize_obs_modality_mapping_from_dict(low_dim_keys)
+
+
+def _ensure_robomimic_imports():
+    """Import robomimic only when a RoboMimic environment is actually used."""
+    global EnvUtils, FileUtils, ObsUtils
+    if EnvUtils is not None and FileUtils is not None and ObsUtils is not None:
+        return
+
+    import robomimic.utils.env_utils as _EnvUtils
+    import robomimic.utils.file_utils as _FileUtils
+    import robomimic.utils.obs_utils as _ObsUtils
+
+    _ObsUtils.initialize_obs_modality_mapping_from_dict(low_dim_keys)
+    EnvUtils = _EnvUtils
+    FileUtils = _FileUtils
+    ObsUtils = _ObsUtils
 
 
 def _get_max_episode_length(env_name):
@@ -84,6 +99,7 @@ def make_env(env_name, seed=0, normalization_path=None):
     """
     NOTE: should get_dataset() first, so that the metadata is downloaded before creating the environment
     """
+    _ensure_robomimic_imports()
     # _download_dataset_and_metadata(env_name)
     dataset_path = _check_dataset_exists(env_name)
 

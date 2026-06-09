@@ -577,7 +577,7 @@ def main(_):
         np.savez(os.path.join(FLAGS.save_dir, "data.npz"), **c_data)
 
     with open(os.path.join(FLAGS.save_dir, 'token.tk'), 'w') as f:
-        f.write(run.url)
+        f.write(run.url or "")
 
     # cleanup
 

@@ -9,3 +9,8 @@ dist/
 .ruff_cache/
 exp/
 logs/
+slurm_logs/
+exp_smoke/
+exp_notebook/
+exp_full/
+slurm_notebook/
