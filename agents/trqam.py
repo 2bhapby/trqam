@@ -306,8 +306,10 @@ class TRQAMAgent(flax.struct.PyTreeNode):
         )
         observations = jnp.repeat(observations[..., None, :], self.config["best_of_n"], axis=-2)
 
-        # Use the fine-tuned flow policy
-        actions = self.compute_flow_actions(observations, noises, model="fast")
+        # During BC pretraining only actor_slow is optimized. actor_fast is
+        # trained during TRQAM fine-tuning, so BC eval must sample actor_slow.
+        model = "slow" if self.config.get("bc_only", False) else "fast"
+        actions = self.compute_flow_actions(observations, noises, model=model)
         actions = jnp.clip(actions, -1, 1)
 
         # best-of-n sampling

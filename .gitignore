@@ -1,5 +1,6 @@
 __pycache__/
 .vscode/
+.ipynb_checkpoints/
 dist/
 *.py[cod]
 *$py.class
@@ -14,3 +15,4 @@ exp_smoke/
 exp_notebook/
 exp_full/
 slurm_notebook/
+data/

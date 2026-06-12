@@ -65,6 +65,76 @@
    pip install -r requirements.txt
    ```
 
+## Notebook workflow used in this repo
+
+`TRQAM_Report.ipynb` is the notebook-local workflow for running the experiments without Slurm. It is configured to run directly inside the selected Jupyter kernel, save checkpoints/logs under `exp_full/`, and keep training/evaluation artifacts out of git.
+
+### Server setup
+
+On a fresh server, clone this repository and create a GPU-enabled conda environment:
+
+```bash
+git clone https://github.com/2bhapby/trqam.git
+cd trqam
+
+conda create -n trqam python=3.10 -y
+conda activate trqam
+pip install -r requirements.txt
+pip install "jax[cuda12]==0.6.2" jaxlib==0.6.2 jupyterlab ipykernel
+python -m ipykernel install --user --name trqam-conda --display-name "TRQAM Conda (GPU)"
+```
+
+Run Jupyter inside `tmux` so training continues after SSH/browser disconnects:
+
+```bash
+tmux new -s trqam-jupyter
+conda activate trqam
+jupyter lab --no-browser --ip=127.0.0.1 --port=8890 --ServerApp.token=trqam --ServerApp.password=
+```
+
+Open `http://127.0.0.1:8890/lab?token=trqam` through SSH port forwarding and select the `TRQAM Conda (GPU)` kernel.
+
+### GPU settings
+
+The notebook sets these before importing JAX:
+
+```python
+MUJOCO_GL=egl
+WANDB_MODE=disabled
+XLA_PYTHON_CLIENT_PREALLOCATE=false
+CUDA_VISIBLE_DEVICES=1
+```
+
+JAX reports the selected visible GPU as `cuda:0`; this is expected even when the physical GPU is `CUDA_VISIBLE_DEVICES=1`. Offline-RL async evaluation defaults to `TRQAM_EVAL_CUDA_VISIBLE_DEVICES=2`. To use different GPUs, set the environment variables before starting the Jupyter kernel, or edit the runtime setup cell and restart the kernel.
+
+### Notebook profiles
+
+The notebook switches profiles inside each stage cell, so run the cells in order. Completed runs are detected by matching `notebook_config.json` plus the final checkpoint/log step; rerunning a completed cell prints `Training Skipped` instead of retraining.
+
+| Profile | Stage cell | Purpose |
+| --- | --- | --- |
+| `full_bc` | 7A | HumanoidMaze medium BC, 300K steps |
+| `full_offline_trqam` | 7B | HumanoidMaze medium TRQAM offline RL, 1M steps |
+| `full_offline_qam` | 7C | HumanoidMaze medium QAM offline RL, 1M steps |
+| `cube_triple_bc` | 7D | Cube-Triple BC, 300K steps |
+| `cube_triple_offline_trqam` | 7E | Cube-Triple TRQAM offline RL, 1M steps |
+| `cube_triple_offline_qam` | 7F | Cube-Triple QAM offline RL, 1M steps |
+
+For the notebook experiments here, Cube-Triple uses action chunk horizon `1`, width `1024`, `actor_layer_norm=True`, batch size `256`, flow steps `10`, and the cached OGBench dataset unless `TRQAM_CUBE_TRIPLE_DATASET_DIR` points to a 10M npz directory.
+
+### Evaluation and outputs
+
+Offline RL saves the latest top-level checkpoint every 1K steps. For every eval step, it also preserves a temporary checkpoint under `async_eval_checkpoints/` until that eval finishes. If the eval worker is busy, the notebook waits and keeps the checkpoint instead of skipping that SR point.
+
+Useful output files:
+
+- `offline_agent.csv`: training metrics.
+- `eval.csv`: success-rate evaluations.
+- `figures/success_rate_by_step.png`: per-run SR curve.
+- `exp_full/comparison/humanoid_medium_qam_vs_trqam_success_rate.png`: humanoid medium QAM/TRQAM comparison plot when generated.
+
+`exp_full/`, `exp/`, notebook checkpoints, and local data folders are ignored by git. Copy `exp_full/` separately when moving trained checkpoints/results between servers.
+
 
 ## Reproducing paper results
 
