@@ -16,3 +16,5 @@ exp_notebook/
 exp_full/
 slurm_notebook/
 data/
+MUJOCO_LOG.TXT
+report_filled*.ipynb
